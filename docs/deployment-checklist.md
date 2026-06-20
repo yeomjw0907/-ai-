@@ -9,12 +9,11 @@
 - [ ] Storage 버킷 `post-images` 생성 (public read)
 - [ ] Project URL · anon key 확보 → 환경변수에 사용
 
-## 2. 카카오 로그인 세팅
-- [ ] 카카오 개발자(developers.kakao.com) 앱 생성
-- [ ] 플랫폼에 서비스 도메인 등록
-- [ ] **Redirect URI** 등록: `https://<project-ref>.supabase.co/auth/v1/callback`
-- [ ] 카카오 로그인 활성화 + 동의항목(닉네임 등) 설정
-- [ ] REST API 키 / Client Secret → **Supabase → Auth → Providers → Kakao**에 입력·활성화
+## 2. 로그인 세팅 (학번 + 비밀번호)
+- [ ] Supabase → **Authentication → Providers → Email** 활성화
+- [ ] **"Confirm email" OFF** (학번을 가짜 이메일로 쓰므로 필수 — 안 끄면 가입이 막힘)
+- [ ] 외부 OAuth(카카오 등) 설정 **불필요** — 학번 로그인으로 자체 완결
+- [ ] (가입 흐름) 앱에서 `학번@ai-campus.local`로 signUp → `profiles`에 학번·이름·과 저장
 
 ## 3. Vercel 배포
 - [ ] GitHub 저장소 연결 → Vercel 프로젝트 import
@@ -32,14 +31,16 @@
 - [ ] 도메인 구매(가비아/Cloudflare 등)
 - [ ] Vercel 프로젝트 → Domains에 추가 → 안내된 DNS 레코드 등록
 - [ ] DNS 전파 대기(수 분~수 시간) 후 https 확인
-- [ ] **카카오 Redirect/도메인 · Supabase Site URL**에 새 도메인 반영
+- [ ] **Supabase Site URL / Redirect URLs**에 새 도메인 반영
 
 ## 6. 결제 (오늘은 미구현 · 언급만)
 - [ ] 강의에서 "토스페이먼츠/포트원 등으로 이렇게 붙는다"만 설명
 
 ## 7. 배포 후 스모크 테스트
 - [ ] 비로그인으로 자료·게시판 열람 OK
-- [ ] 카카오 로그인 → 표시이름 온보딩 OK
+- [ ] 회원가입(학번·이름·과·비번) → 자동 로그인 OK
+- [ ] 로그아웃 후 학번/비번으로 재로그인 OK
+- [ ] 같은 학번 재가입 시 "이미 가입된 학번" 처리 OK
 - [ ] 글쓰기(URL+스샷+설명) → 게시 OK
 - [ ] 좋아요 / 최신순·인기순 토글 OK
 - [ ] 본인 글 수정·삭제 OK / 강사 admin 삭제 OK

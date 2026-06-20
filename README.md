@@ -4,7 +4,8 @@
 이 앱 자체가 강의의 "실제 개발 과정(도그푸딩)" 예시다.
 
 ## 스택
-Next.js (App Router·TS) · Tailwind CSS · Supabase(DB·Auth·Storage) · 카카오 OAuth · Vercel 배포 · PWA
+Next.js (App Router·TS) · Tailwind CSS · Supabase(DB·Auth·Storage) · Vercel 배포 · PWA
+로그인: **학번 + 비밀번호** (외부 OAuth 없음)
 
 ## 시작하기
 ```bash

@@ -12,7 +12,7 @@
 | [database-schema.md](database-schema.md) | 테이블·관계·RLS·Storage (DDL 포함) |
 | [architecture.md](architecture.md) | 기술 구조(3층)·인증 흐름·폴더 구조 |
 | [design-system.md](design-system.md) | 색·폰트·컴포넌트 규칙 |
-| [deployment-checklist.md](deployment-checklist.md) | Supabase·카카오·Vercel·도메인 배포 절차 |
+| [deployment-checklist.md](deployment-checklist.md) | Supabase·Vercel·도메인 배포 절차 (학번 로그인) |
 | [env.md](env.md) | 환경변수 설명 (샘플: `../.env.example`) |
 | [roadmap.md](roadmap.md) | **구현 로드맵** — 추가 예정 문서 + Phase별 계획 |
 | [lecture-deck-prompt.md](lecture-deck-prompt.md) | **강의안(HTML) 재생성 프롬프트** — 다른 세션에 붙여넣어 덱 생성 |
@@ -23,5 +23,5 @@
 ## 제품 요약
 - **이름:** 대진대학교 AI캠퍼스
 - **형태:** PWA (모바일 우선)
-- **스택:** Next.js + Vercel + Supabase + 카카오 OAuth
-- **핵심:** ① 강의 자료(비로그인 열람) ② 결과물 게시판(카카오 로그인 후 업로드·좋아요)
+- **스택:** Next.js + Vercel + Supabase (로그인: 학번+비밀번호, 외부 OAuth 없음)
+- **핵심:** ① 강의 자료(비로그인 열람) ② 결과물 게시판(학번 로그인 후 업로드·좋아요)

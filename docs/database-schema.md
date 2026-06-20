@@ -3,7 +3,7 @@
 ## 1. 테이블 개요
 | 테이블 | 역할 |
 |---|---|
-| `profiles` | 사용자 정보(표시 이름, admin 여부). `auth.users`와 1:1 |
+| `profiles` | 사용자 정보(학번·이름·과·admin). `auth.users`와 1:1 |
 | `posts` | 결과물 게시글(URL·이미지·제목·한줄설명) |
 | `likes` | 좋아요 (사용자 × 글, 1회) |
 | Storage `post-images` | 스크린샷 이미지 파일 |
@@ -13,6 +13,10 @@
 auth.users ──1:1── profiles ──1:N── posts ──1:N── likes ──N:1── profiles
 ```
 
+> **로그인 방식:** Supabase Auth는 이메일 기반이라, **학번을 내부 이메일로 변환**해서 쓴다.
+> `학번 20231234 → auth.users.email = 20231234@ai-campus.local` (사용자에겐 노출 안 함).
+> 학번 원본·이름·과는 아래 `profiles`에 저장한다.
+
 ## 3. DDL
 
 ```sql
@@ -21,10 +25,12 @@ create extension if not exists "pgcrypto";
 
 -- profiles : auth.users 와 1:1
 create table public.profiles (
-  id           uuid primary key references auth.users(id) on delete cascade,
-  display_name text not null,
-  is_admin     boolean not null default false,
-  created_at   timestamptz not null default now()
+  id          uuid primary key references auth.users(id) on delete cascade,
+  student_no  text not null unique,   -- 학번
+  name        text not null,          -- 이름 (게시판 표시명)
+  department  text not null,          -- 과
+  is_admin    boolean not null default false,
+  created_at  timestamptz not null default now()
 );
 
 -- posts : 결과물 게시글
@@ -92,12 +98,25 @@ create policy "likes delete" on public.likes for delete using (auth.uid() = user
 - 업로드: 로그인 사용자, 경로 규칙 `post-images/{user_id}/{파일명}`
 - 정책: read = public / insert = authenticated (경로 첫 폴더가 본인 uid)
 
-## 6. 가입(온보딩) 처리
-- 카카오 로그인 성공 → `profiles`에 해당 `id` 행이 없으면 온보딩(S6)에서 `display_name` 입력 후 insert.
-- (선택) `auth.users` 생성 시 트리거로 빈 profiles 자동 생성 후, 표시이름만 update 하는 방식도 가능.
+## 6. 가입 처리 (학번 로그인)
+1. Supabase 대시보드 → **Authentication → Providers → Email → "Confirm email" OFF** (가짜 이메일이라 필수).
+2. 회원가입(S6): 학번·이름·과·비밀번호 입력 →
+   ```ts
+   const email = `${studentNo}@ai-campus.local`;
+   const { data, error } = await supabase.auth.signUp({
+     email, password,
+     options: { data: { student_no: studentNo, name, department } },
+   });
+   // 성공 시 (confirm off라 즉시 세션) profiles insert
+   await supabase.from("profiles").insert({
+     id: data.user.id, student_no: studentNo, name, department,
+   });
+   ```
+3. 로그인(S5): `supabase.auth.signInWithPassword({ email: `${studentNo}@ai-campus.local`, password })`
+4. (선택) `auth.users` insert 트리거로 `raw_user_meta_data`를 읽어 profiles 자동 생성하는 방식도 가능.
 
 ## 7. admin 지정
-- 강사 계정은 최초 로그인 후, 대시보드 SQL로 수동 지정:
+- 강사 계정은 가입 후, 대시보드 SQL로 수동 지정:
   ```sql
-  update public.profiles set is_admin = true where id = '<강사 user uuid>';
+  update public.profiles set is_admin = true where student_no = '<강사 학번>';
   ```

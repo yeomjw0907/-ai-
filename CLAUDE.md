@@ -6,7 +6,7 @@
 ## 1. 이 앱이 뭐냐
 바이브코딩 창업캠프 데모 PWA. 두 가지를 한다:
 1. **강의 자료**(흐름·치트시트·도구링크) — 로그인 없이 열람
-2. **결과물 게시판** — 카카오 로그인 후 본인 앱(URL+스샷+한줄설명) 업로드, 좋아요, 최신순/인기순
+2. **결과물 게시판** — 학번 로그인 후 본인 앱(URL+스샷+한줄설명) 업로드, 좋아요, 최신순/인기순
 
 왜 만들었는지(배경·의도)는 `docs/project-brief.md`, 요구사항은 `docs/PRD.md`, 화면은 `docs/user-flow.md`, 데이터는 `docs/database-schema.md`.
 
@@ -16,10 +16,17 @@
 - **Next.js (App Router) + TypeScript**
 - **Tailwind CSS** (모바일 우선, 컨테이너 최대폭 480px)
 - **Supabase** — `@supabase/supabase-js` (DB·Auth·Storage)
-- **카카오 OAuth** (Supabase provider 경유)
+- **로그인: 학번 + 비밀번호** (외부 OAuth 없음)
 - **PWA** (manifest + service worker)
 - 배포: **Vercel**
 > 다른 프레임워크/UI 라이브러리/상태관리 도구를 임의로 추가하지 말 것. 추가가 필요하면 먼저 물어볼 것.
+
+### 로그인 구현 규칙 (중요)
+- Supabase Auth는 이메일 기반 → **학번을 내부 이메일로 변환**해서 쓴다: `이메일 = `${학번}@ai-campus.local``. 도메인 상수는 한 곳에서 관리.
+- 회원가입 입력: **학번 · 이름 · 과 · 비밀번호 · 비밀번호 확인**. 비번 일치 검사는 클라이언트에서.
+- 로그인 입력: **학번 · 비밀번호**.
+- 가입 성공 후 `profiles`(student_no·name·department) insert. 사용자에게 이메일·OAuth를 절대 노출하지 말 것.
+- Supabase는 **Confirm email OFF** 전제(가짜 이메일). 카카오/구글 등 OAuth 붙이지 말 것.
 
 ## 3. 디자인
 `docs/design-system.md`를 따른다. 색·폰트·컴포넌트 규칙 임의 변경 금지.
@@ -28,7 +35,7 @@
 
 ## 4. 데이터 / 보안 규칙
 - DB 접근은 **클라이언트 supabase-js + RLS**로 한다. 별도 백엔드 서버를 만들지 않는다.
-- 스키마/정책은 `docs/database-schema.md`와 **일치**시킨다. 테이블·컬럼명을 바꾸지 말 것.
+- 스키마/정책은 `docs/database-schema.md`와 **일치**시킨다. 테이블·컬럼명을 바꾸지 말 것. (`profiles`: student_no·name·department·is_admin)
 - **service_role 키를 클라이언트에 절대 넣지 않는다.** 공개 가능한 건 anon 키뿐.
 - 권한: 글 작성=본인, 수정·삭제=본인 또는 admin. 좋아요=본인 1회.
 - 이미지 업로드 경로: `post-images/{user_id}/{파일명}`.

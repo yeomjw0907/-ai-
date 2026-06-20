@@ -29,7 +29,7 @@
 | `test-plan.md` | **QA 시나리오** — 기능별 점검 체크리스트(로그인·글쓰기·권한·좋아요) | Phase 5 |
 | `lecture-deck-prompt.md` | ✅ **강의안(HTML) 재생성 프롬프트** — 다른 세션에 붙여넣어 덱 생성 (9단 구성 전체 포함) | 작성 완료 |
 | `lecture-mapping.md` | (선택) 기존 35슬라이드 → 신규 구조 상세 매핑표. *프롬프트로 새로 만들면 불필요할 수 있음* | Phase 6 |
-| `kakao-supabase-setup.md` *(선택)* | 카카오 개발자 앱 ↔ Supabase Provider 연결 상세 캡처 가이드 | Phase 2 (필요 시) |
+| (없음) | 로그인이 학번+비밀번호(Supabase Email Auth)로 단순해져 별도 OAuth 셋업 문서 불필요 | — |
 
 > 컴포넌트 단위 UI 스펙은 별도 문서 없이 `design-system.md` + `CLAUDE.md`로 커버한다.
 
@@ -51,12 +51,11 @@
 - 산출물: QR로 들어가면 자료가 보이는 상태 (강의 5번에서 바로 시연 가능)
 
 ### Phase 2 — Supabase 연동 & 인증 (F2)
-- Supabase 프로젝트 생성 → `database-schema.md` DDL·RLS 적용, `post-images` 버킷
+- Supabase 프로젝트 생성 → `database-schema.md` DDL·RLS 적용, `post-images` 버킷, **Confirm email OFF**
 - `lib/supabase.ts` 클라이언트
-- **카카오 OAuth** 로그인/로그아웃
-- **표시이름 온보딩**(S6) → `profiles` 기록
-- 필요문서: (선택) `kakao-supabase-setup.md`
-- 산출물: 로그인되고 내 표시이름이 잡히는 상태
+- **회원가입(S6)**: 학번·이름·과·비번 → 학번을 내부 이메일로 변환해 가입 + `profiles` insert
+- **로그인(S5)**: 학번+비번 / 로그아웃
+- 산출물: 학번으로 가입·로그인되고 이름·과가 잡히는 상태
 
 ### Phase 3 — 게시판 읽기 (F3-읽기)
 - 목록(S2): 카드 갤러리 + **최신순/인기순 토글**(`posts_with_likes` 뷰)

@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 const TABS = [
   { href: "/", label: "자료", match: (p: string) => p === "/" },
   { href: "/board", label: "게시판", match: (p: string) => p.startsWith("/board") },
-  { href: "/login", label: "내 정보", match: (p: string) => p === "/login" || p === "/onboarding" },
+  { href: "/login", label: "내 정보", match: (p: string) => p === "/login" || p === "/signup" },
 ];
 
 export default function BottomTab() {

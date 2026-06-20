@@ -6,7 +6,7 @@ import BottomTab from "@/components/BottomTab";
 
 export const metadata: Metadata = {
   title: "대진대학교 AI캠퍼스",
-  description: "바이브코딩 창업캠프 — 강의 자료 + 결과물 게시판",
+  description: "바이브코딩 창업캠프 — 강의 자료 + 콘테스트 + Q&A",
   manifest: "/manifest.json",
   icons: { icon: "/logo_color.png", apple: "/logo_color.png" },
 };

@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>바이브코딩으로 앱 배포하기 — 2026 대진대학교 창업캠프</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root{
+    --primary:#0B4DA2; --primary-d:#083B7D; --accent:#FF4D6D;
+    --bg:#F7F8FA; --surface:#FFFFFF; --text:#1A1D21; --text2:#6B7280; --line:#E5E7EB;
+    --primary-wash:#EEF4FC; --accent-wash:#FFE9ED;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;background:#0d1117;overflow:hidden;font-family:'Pretendard',-apple-system,sans-serif;}
+
+  #viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+  #stage{position:relative;width:1280px;height:720px;background:var(--bg);transform-origin:center center;}
+
+  .slide{position:absolute;inset:0;background:var(--bg);opacity:0;visibility:hidden;transition:opacity .25s ease;
+         display:flex;flex-direction:column;}
+  .slide.active{opacity:1;visibility:visible;}
+
+  /* full-bleed image slide (강사 프로필 등) */
+  .slide-img{background:#0d1117;}
+  .slide-img>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:1;}
+  .slide-img .ph-full{position:absolute;inset:0;z-index:0;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;gap:14px;color:#5b6675;text-align:center;}
+  .slide-img .ph-full .ic{width:40px;height:40px;color:#3f4858;}
+  .slide-img .ph-full .cap{font-size:20px;font-weight:700;color:#7a8595;}
+
+  .pad{flex:1;display:flex;flex-direction:column;padding:56px 80px;position:relative;z-index:1;min-height:0;}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:18px;font-weight:600;color:var(--primary);letter-spacing:.2px;}
+  .chapter{display:inline-flex;align-items:center;gap:9px;font-size:17px;font-weight:600;color:var(--primary);letter-spacing:.3px;}
+  .chapter .ic{width:17px;height:17px;stroke-width:2.2;}
+  .s-title{font-size:44px;font-weight:800;color:var(--text);line-height:1.18;letter-spacing:-.5px;}
+  .s-sub{font-size:21px;font-weight:500;color:var(--text2);line-height:1.5;}
+
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:16px;font-weight:600;padding:9px 16px;border-radius:10px;
+         background:var(--surface);border:1px solid var(--line);color:var(--primary);}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px 26px;}
+  .card.hl{border-color:var(--primary);background:var(--primary-wash);}
+
+  .takeaway{display:flex;align-items:center;gap:14px;background:var(--primary-wash);border:1px solid #CFE0F5;
+            border-radius:14px;padding:18px 26px;}
+  .takeaway .ic{width:24px;height:24px;color:var(--primary);flex-shrink:0;}
+  .takeaway span{font-size:20px;font-weight:600;color:var(--primary-d);line-height:1.4;}
+
+  .ph{border:2px dashed #C5CCD6;border-radius:14px;background:#FBFCFE;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;gap:10px;color:var(--text2);text-align:center;padding:16px;}
+  .ph .ic{width:30px;height:30px;color:#AEB6C2;}
+  .ph .cap{font-size:15px;font-weight:600;color:var(--text2);}
+
+  .imgframe{border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden;
+            display:flex;align-items:center;justify-content:center;}
+  .imgframe img{width:100%;height:100%;object-fit:contain;display:block;}
+
+  .accent-bar{position:absolute;left:0;top:0;bottom:0;width:14px;background:var(--primary);z-index:2;}
+
+  .snum{position:absolute;right:34px;bottom:24px;font-size:15px;font-weight:600;color:var(--text2);letter-spacing:.5px;z-index:3;}
+  .progress{position:absolute;left:0;bottom:0;height:4px;background:var(--primary);z-index:3;transition:width .25s ease;}
+
+  /* title */
+  .title-pad{justify-content:center;}
+  .logo-sym{width:78px;height:78px;margin-bottom:30px;}
+  .logo-sym img{width:100%;height:100%;object-fit:contain;}
+  .title-main{font-size:78px;font-weight:800;color:var(--text);line-height:1.1;letter-spacing:-1.5px;margin:14px 0 22px;}
+  .title-main .ac{color:var(--accent);}
+  .title-meta{font-size:20px;font-weight:500;color:var(--text2);margin-bottom:38px;}
+  .title-meta b{color:var(--text);font-weight:700;}
+
+  /* qr */
+  .qrcard{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px;display:flex;
+          flex-direction:column;align-items:center;gap:16px;width:300px;}
+  .qrcard .qrimg{width:220px;height:220px;}
+  .qrcard .qrimg img{width:100%;height:100%;object-fit:contain;}
+  .qrcard .qrlabel{font-size:20px;font-weight:700;color:var(--text);}
+
+  /* pipeline */
+  .pipe{display:flex;align-items:stretch;gap:0;flex:1;}
+  .pipe-step{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+             border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:18px 8px;text-align:center;}
+  .pipe-step.click{border-color:var(--primary);background:var(--primary-wash);}
+  .pipe-step .pi{width:30px;height:30px;color:var(--text2);}
+  .pipe-step.click .pi{color:var(--primary);}
+  .pipe-step .pl{font-size:18px;font-weight:700;color:var(--text);}
+  .pipe-step.click .pl{color:var(--primary-d);}
+  .pipe-arrow{display:flex;align-items:center;color:#C5CCD6;flex-shrink:0;width:26px;justify-content:center;}
+  .ddalkkak{font-size:12px;font-weight:700;color:#fff;background:var(--primary);padding:2px 9px;border-radius:20px;}
+
+  /* practice slides */
+  .cols{flex:1;display:flex;gap:30px;min-height:0;}
+  .stepno{font-size:14px;font-weight:800;color:#fff;background:var(--primary);padding:3px 11px;border-radius:8px;letter-spacing:.5px;}
+  .todo-list{display:flex;flex-direction:column;gap:18px;}
+  .todo{display:flex;gap:14px;align-items:flex-start;}
+  .todo .ti{width:30px;height:30px;border-radius:9px;background:var(--primary-wash);color:var(--primary);
+            display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:800;font-size:16px;margin-top:2px;}
+  .todo .tt{font-size:21px;font-weight:700;color:var(--text);line-height:1.4;}
+  .todo .tt span{font-size:16px;font-weight:500;color:var(--text2);display:block;margin-top:2px;}
+  .codecard{background:#0E1726;border-radius:12px;padding:20px 24px;font-family:'Consolas','D2Coding',monospace;
+            color:#CDD6E4;font-size:18px;line-height:2;}
+  .codecard .cm{color:#6B7E99;}
+  .codecard .pr{color:#5DA9FF;}
+  .tip{display:flex;gap:12px;align-items:center;background:#FFF7EC;border:1px solid #F6DDB4;border-radius:12px;padding:14px 22px;}
+  .tip i{width:22px;height:22px;color:#B9791B;flex-shrink:0;}
+  .tip span{font-size:18px;font-weight:500;color:#8A5A12;}
+  .tip b{color:#7A4E0F;font-weight:700;}
+</style>
+</head>
+<body>
+<div id="viewport">
+  <div id="stage">
+
+    <!-- ============ P01 · 타이틀 ============ -->
+    <section class="slide active">
+      <div class="accent-bar"></div>
+      <div class="pad title-pad" style="padding-left:110px;">
+        <div class="logo-sym"><img src="assets/deck/logo-symbol.svg" alt="대진대학교"></div>
+        <div class="eyebrow">2026 대진대학교 창업캠프</div>
+        <h1 class="title-main">바이브코딩으로<br>앱 <span class="ac">배포</span>하기</h1>
+        <p class="s-sub" style="font-size:24px;margin-bottom:14px;">코딩 경험이 없어도, 진짜 서비스를 만들고 배포까지</p>
+        <div class="title-meta">2026. 06. 22 (월) · 10:00–18:00 &nbsp;|&nbsp; 강사 <b>3명</b> · 비개발자 예비창업자 대상</div>
+        <div style="display:flex;gap:12px;">
+          <span class="badge"><i data-lucide="mouse-pointer-click" style="width:16px;height:16px;"></i>Cursor</span>
+          <span class="badge"><i data-lucide="triangle" style="width:16px;height:16px;"></i>Vercel</span>
+          <span class="badge"><i data-lucide="database" style="width:16px;height:16px;"></i>Supabase</span>
+          <span class="badge"><i data-lucide="message-circle" style="width:16px;height:16px;"></i>카카오</span>
+        </div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P02 · 시작 전 (오픈톡방 입장) ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="hand" class="ic"></i> 시작 전에</div>
+        <h2 class="s-title" style="margin:18px 0 8px;">먼저, 오픈톡방에 들어오세요</h2>
+        <p class="s-sub" style="margin-bottom:30px;">오늘 공지·자료 공유·질문은 전부 이 톡방에서 — 막히면 여기에 캡처를 올리면 됩니다</p>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:60px;">
+          <div class="qrcard">
+            <div class="qrimg"><img src="assets/deck/qr-opentalk.png" alt="오픈톡방 QR"></div>
+            <div class="qrlabel">카카오톡 오픈톡방</div>
+          </div>
+          <div style="max-width:420px;display:flex;flex-direction:column;gap:20px;">
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <i data-lucide="qr-code" style="width:26px;height:26px;color:var(--primary);flex-shrink:0;margin-top:2px;"></i>
+              <div><div style="font-size:21px;font-weight:700;color:var(--text);">QR 스캔 → 입장</div><div style="font-size:17px;color:var(--text2);">카메라로 QR을 비추면 바로 들어옵니다</div></div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <i data-lucide="message-square" style="width:26px;height:26px;color:var(--primary);flex-shrink:0;margin-top:2px;"></i>
+              <div><div style="font-size:21px;font-weight:700;color:var(--text);">닉네임은 본명으로</div><div style="font-size:17px;color:var(--text2);">서로 도와주기 편하게</div></div>
+            </div>
+            <div class="takeaway"><i data-lucide="info" class="ic"></i><span>캠프 앱 입장은 <b>점심 이후</b>에 다 같이 — 지금은 톡방만!</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P03 · 강사 소개 ① 서영호 (주강사) ============ -->
+    <section class="slide slide-img">
+      <div class="ph-full"><i data-lucide="user" class="ic"></i><div class="cap">[강사 프로필: 서영호 · 주강사]</div><div style="font-size:14px;color:#5b6675;">instructor-seo.png</div></div>
+      <img src="assets/deck/instructor-seo.png" alt="주강사 서영호" onerror="this.style.display='none'">
+    </section>
+
+    <!-- ============ P03 · 강사 소개 ② 윤재호 (보조강사) ============ -->
+    <section class="slide slide-img">
+      <div class="ph-full"><i data-lucide="user" class="ic"></i><div class="cap">[강사 프로필: 윤재호 · 보조강사]</div><div style="font-size:14px;color:#5b6675;">instructor-yoon.png</div></div>
+      <img src="assets/deck/instructor-yoon.png" alt="보조강사 윤재호" onerror="this.style.display='none'">
+    </section>
+
+    <!-- ============ P03 · 강사 소개 ③ 김준혁 (보조강사) ============ -->
+    <section class="slide slide-img">
+      <div class="ph-full"><i data-lucide="user" class="ic"></i><div class="cap">[강사 프로필: 김준혁 · 보조강사]</div><div style="font-size:14px;color:#5b6675;">instructor-kim.png</div></div>
+      <img src="assets/deck/instructor-kim.png" alt="보조강사 김준혁" onerror="this.style.display='none'">
+    </section>
+
+    <!-- ============ P04 · 대 딸깍의 시대 ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="zap" class="ic"></i> CHAPTER 1 — 왜 지금인가</div>
+        <h2 class="s-title" style="margin:16px 0 6px;">검색의 시대에서, <span style="color:var(--accent);">대 딸깍의 시대</span>로</h2>
+        <p class="s-sub" style="margin-bottom:22px;">예전엔 스택오버플로우를 뒤져 답을 "찾았다" — 이제는 AI에게 또렷이 요청하면 "만들어집니다"</p>
+        <div class="imgframe" style="flex:1;min-height:0;">
+          <img src="assets/deck/p04-ddalkkak.png" alt="대 딸깍의 시대">
+        </div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P05 · 스택오버플로우 쇠퇴 ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="trending-down" class="ic"></i> CHAPTER 1 — 왜 지금인가</div>
+        <h2 class="s-title" style="margin:16px 0 6px;">"답을 검색하던 곳"이 비어가고 있습니다</h2>
+        <p class="s-sub" style="margin-bottom:18px;">개발자들의 Q&A 성지 스택오버플로우 — ChatGPT 등장 이후 질문 수가 급감했습니다</p>
+        <div style="flex:1;display:flex;gap:26px;min-height:0;">
+          <div class="imgframe" style="flex:1.6;min-height:0;">
+            <img src="assets/deck/p05-stackoverflow.png" alt="스택오버플로우 질문 수 추이">
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:18px;">
+            <div class="card"><div style="font-size:17px;font-weight:600;color:var(--text2);margin-bottom:4px;">2020</div><div style="font-size:20px;font-weight:700;color:var(--text);">코로나 정점 → 이후 하락</div></div>
+            <div class="card hl"><div style="font-size:17px;font-weight:600;color:var(--primary);margin-bottom:4px;">2022 — ChatGPT 출시</div><div style="font-size:20px;font-weight:700;color:var(--primary-d);">질문 수 가파른 급감</div></div>
+            <div class="takeaway"><i data-lucide="message-square-dashed" class="ic"></i><span>검색 → <b>직접 묻고 만드는</b> 방식으로</span></div>
+          </div>
+        </div>
+        <p style="font-size:14px;color:var(--text2);margin-top:10px;">출처: Stack Overflow via StackExchange (Chartr)</p>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P06 · 바이브코딩이란 ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="lightbulb" class="ic"></i> CHAPTER 1 — 바이브코딩이란</div>
+        <h2 class="s-title" style="margin:16px 0 18px;">"바이브코딩"이라는 새로운 방식</h2>
+        <div class="card hl" style="margin-bottom:22px;">
+          <div style="font-size:15px;font-weight:700;letter-spacing:.5px;color:var(--accent);margin-bottom:12px;">ANDREJ KARPATHY · 2025. 2</div>
+          <div style="font-size:27px;font-weight:600;line-height:1.5;color:var(--text);">"코드가 존재한다는 사실조차 잊은 채, <span style="color:var(--primary);">감각(vibe)에 몸을 맡기는</span> 새로운 코딩"</div>
+        </div>
+        <div style="flex:1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;min-height:0;">
+          <div class="card" style="display:flex;flex-direction:column;gap:12px;">
+            <i data-lucide="users-round" style="width:30px;height:30px;color:var(--primary);"></i>
+            <div style="font-size:20px;font-weight:700;color:var(--text);">개발자 수요 변화</div>
+            <p style="font-size:15px;color:var(--text2);line-height:1.5;margin-top:auto;">"많은 인력"보다 "또렷한 기획"의 시대로</p>
+          </div>
+          <a href="https://leanaileaderboard.com/" target="_blank" rel="noopener" class="card hl" style="display:flex;flex-direction:column;gap:12px;text-decoration:none;">
+            <i data-lucide="trophy" style="width:30px;height:30px;color:var(--primary);"></i>
+            <div style="font-size:20px;font-weight:700;color:var(--text);">AI로 굴러가는 기업들</div>
+            <p style="font-size:15px;color:var(--text2);line-height:1.5;">소수 인원으로 운영되는 AI 기업 리더보드 — 지금 바로 열어보기</p>
+            <span style="font-size:15px;font-weight:700;color:var(--primary);display:inline-flex;align-items:center;gap:6px;margin-top:auto;"><i data-lucide="external-link" style="width:16px;height:16px;"></i>leanaileaderboard.com</span>
+          </a>
+          <div class="card" style="display:flex;flex-direction:column;gap:12px;">
+            <i data-lucide="banknote" style="width:30px;height:30px;color:var(--primary);"></i>
+            <div style="font-size:20px;font-weight:700;color:var(--text);">1인 기업가의 수익</div>
+            <p style="font-size:15px;color:var(--text2);line-height:1.5;margin-top:auto;">배출을 넘어, 실제 큰 매출을 내는 단계</p>
+          </div>
+        </div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P07 · 진짜 다 딸깍되나 (반전) ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="git-branch" class="ic"></i> CHAPTER 1 — 진짜 다 딸깍되나?</div>
+        <h2 class="s-title" style="margin:16px 0 6px;">"딸깍"되는 건 <span style="color:var(--primary);">일부</span>입니다</h2>
+        <p class="s-sub" style="margin-bottom:30px;">서비스 하나가 나오기까지 — 이 전체 흐름 중 자동화되는 건 개발 언저리뿐</p>
+        <div class="pipe">
+          <div class="pipe-step"><i data-lucide="clipboard-list" class="pi"></i><span class="pl">기획</span></div>
+          <div class="pipe-arrow"><i data-lucide="chevron-right" style="width:22px;height:22px;"></i></div>
+          <div class="pipe-step"><i data-lucide="messages-square" class="pi"></i><span class="pl">고객 인터뷰</span></div>
+          <div class="pipe-arrow"><i data-lucide="chevron-right" style="width:22px;height:22px;"></i></div>
+          <div class="pipe-step click"><i data-lucide="palette" class="pi"></i><span class="pl">디자인</span><span class="ddalkkak">거의 딸깍</span></div>
+          <div class="pipe-arrow"><i data-lucide="chevron-right" style="width:22px;height:22px;"></i></div>
+          <div class="pipe-step click"><i data-lucide="code-2" class="pi"></i><span class="pl">개발</span><span class="ddalkkak">딸깍</span></div>
+          <div class="pipe-arrow"><i data-lucide="chevron-right" style="width:22px;height:22px;"></i></div>
+          <div class="pipe-step"><i data-lucide="rocket" class="pi"></i><span class="pl">퍼블리싱</span></div>
+          <div class="pipe-arrow"><i data-lucide="chevron-right" style="width:22px;height:22px;"></i></div>
+          <div class="pipe-step"><i data-lucide="megaphone" class="pi"></i><span class="pl">마케팅</span></div>
+        </div>
+        <div class="takeaway" style="margin-top:30px;">
+          <i data-lucide="target" class="ic"></i>
+          <span>딸깍되는 건 일부 — 가장 앞단의 <b>'기획'이 전체를 좌우합니다.</b></span>
+        </div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P08 · 알맞은 기획 (음식 비유) ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="chef-hat" class="ic"></i> CHAPTER 1 — 알맞은 기획</div>
+        <h2 class="s-title" style="margin:16px 0 6px;">개발이 요리라면, 기획은 레시피</h2>
+        <p class="s-sub" style="margin-bottom:30px;">좋은 재료(AI)가 있어도, 레시피가 엉성하면 음식은 망합니다</p>
+        <div style="flex:1;display:grid;grid-template-columns:repeat(5,1fr);gap:16px;align-items:stretch;min-height:0;">
+          <div class="card" style="display:flex;flex-direction:column;gap:12px;padding:22px;">
+            <i data-lucide="search" style="width:32px;height:32px;color:var(--text2);"></i>
+            <div><div style="font-size:15px;color:var(--text2);font-weight:600;">니즈 파악</div><div style="font-size:24px;font-weight:800;color:var(--text);">시장조사</div></div>
+            <p style="font-size:14px;color:var(--text2);line-height:1.5;margin-top:auto;">먹을 사람이 뭘 원하는지 먼저</p>
+          </div>
+          <div class="card hl" style="display:flex;flex-direction:column;gap:12px;padding:22px;">
+            <i data-lucide="clipboard-list" style="width:32px;height:32px;color:var(--primary);"></i>
+            <div><div style="font-size:15px;color:var(--primary);font-weight:600;">레시피 쓰기</div><div style="font-size:24px;font-weight:800;color:var(--primary-d);">기획</div></div>
+            <p style="font-size:14px;color:var(--primary-d);line-height:1.5;margin-top:auto;font-weight:500;">무엇을·어떻게 — <b>오늘의 핵심</b></p>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;gap:12px;padding:22px;">
+            <i data-lucide="cooking-pot" style="width:32px;height:32px;color:var(--text2);"></i>
+            <div><div style="font-size:15px;color:var(--text2);font-weight:600;">요리하기</div><div style="font-size:24px;font-weight:800;color:var(--text);">개발</div></div>
+            <p style="font-size:14px;color:var(--text2);line-height:1.5;margin-top:auto;">재료를 실제 음식으로 — 상당 부분 "딸깍"</p>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;gap:12px;padding:22px;">
+            <i data-lucide="megaphone" style="width:32px;height:32px;color:var(--text2);"></i>
+            <div><div style="font-size:15px;color:var(--text2);font-weight:600;">먹게 하기</div><div style="font-size:24px;font-weight:800;color:var(--text);">마케팅</div></div>
+            <p style="font-size:14px;color:var(--text2);line-height:1.5;margin-top:auto;">만든 걸 알리고 쓰게 만들기</p>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;gap:12px;padding:22px;">
+            <i data-lucide="refresh-cw" style="width:32px;height:32px;color:var(--text2);"></i>
+            <div><div style="font-size:15px;color:var(--text2);font-weight:600;">레시피 보강</div><div style="font-size:24px;font-weight:800;color:var(--text);">기능 개선</div></div>
+            <p style="font-size:14px;color:var(--text2);line-height:1.5;margin-top:auto;">써보고 받은 피드백으로 다시 다듬기</p>
+          </div>
+        </div>
+        <div class="takeaway" style="margin-top:26px;">
+          <i data-lucide="utensils" class="ic"></i>
+          <span>오늘은 <b>레시피 개발</b>에 집중합니다.</span>
+        </div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P09 · 좋은 프롬프트 5요소 ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="pen-tool" class="ic"></i> CHAPTER 1 — 알맞은 기획</div>
+        <h2 class="s-title" style="margin:16px 0 6px;">AI에게 잘 말하는 법</h2>
+        <p class="s-sub" style="margin-bottom:22px;">"스터디 앱 만들어줘"(막연) → 또렷하게 쪼개서 요청하면 결과가 달라집니다</p>
+
+        <div style="display:flex;gap:18px;margin-bottom:24px;">
+          <div class="card" style="flex:1;border-color:#F0C0C0;background:#FCF3F3;display:flex;align-items:center;gap:14px;">
+            <i data-lucide="x-circle" style="width:26px;height:26px;color:var(--accent);"></i>
+            <div><div style="font-size:15px;font-weight:600;color:var(--accent);">막연한 요청</div><div style="font-size:20px;font-weight:700;color:var(--text);">"스터디 앱 만들어줘"</div></div>
+          </div>
+          <div class="card hl" style="flex:1.4;display:flex;align-items:center;gap:14px;">
+            <i data-lucide="check-circle" style="width:26px;height:26px;color:var(--primary);"></i>
+            <div><div style="font-size:15px;font-weight:600;color:var(--primary);">또렷한 요청</div><div style="font-size:19px;font-weight:700;color:var(--primary-d);">누가·무엇·왜·어떤 화면·어떤 느낌을 담아서</div></div>
+          </div>
+        </div>
+
+        <div style="flex:1;display:grid;grid-template-columns:repeat(5,1fr);gap:14px;min-height:0;">
+          <div class="card" style="display:flex;flex-direction:column;gap:10px;padding:20px;">
+            <div style="font-size:30px;font-weight:800;color:var(--primary);">1</div>
+            <div style="font-size:19px;font-weight:700;color:var(--text);">누가 쓰나</div>
+            <p style="font-size:14px;color:var(--text2);line-height:1.5;margin-top:auto;">대상 사용자</p>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;gap:10px;padding:20px;">
+            <div style="font-size:30px;font-weight:800;color:var(--primary);">2</div>
+            <div style="font-size:19px;font-weight:700;color:var(--text);">무엇을</div>
+            <p style="font-size:14px;color:var(--text2);line-height:1.5;margin-top:auto;">핵심 기능</p>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;gap:10px;padding:20px;">
+            <div style="font-size:30px;font-weight:800;color:var(--primary);">3</div>
+            <div style="font-size:19px;font-weight:700;color:var(--text);">왜</div>
+            <p style="font-size:14px;color:var(--text2);line-height:1.5;margin-top:auto;">해결할 문제</p>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;gap:10px;padding:20px;">
+            <div style="font-size:30px;font-weight:800;color:var(--primary);">4</div>
+            <div style="font-size:19px;font-weight:700;color:var(--text);">어떤 화면·기능</div>
+            <p style="font-size:14px;color:var(--text2);line-height:1.5;margin-top:auto;">구체적 구성</p>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;gap:10px;padding:20px;">
+            <div style="font-size:30px;font-weight:800;color:var(--primary);">5</div>
+            <div style="font-size:19px;font-weight:700;color:var(--text);">어떤 느낌</div>
+            <p style="font-size:14px;color:var(--text2);line-height:1.5;margin-top:auto;">톤·분위기</p>
+          </div>
+        </div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P10 · 데모 앱 소개 ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="layout-grid" class="ic"></i> CHAPTER 2 — 데모 앱</div>
+        <h2 class="s-title" style="margin:16px 0 6px;">이 강의를 위해, 진짜 앱을 만들었습니다</h2>
+        <p class="s-sub" style="margin-bottom:26px;">대진대학교 <b style="color:var(--text);">AI캠퍼스</b> · 홈 화면에 설치되는 PWA</p>
+        <div style="flex:1;display:flex;gap:30px;min-height:0;">
+          <div style="flex:0.85;display:flex;flex-direction:column;gap:18px;min-height:0;">
+            <div class="ph" style="flex:1;"><i data-lucide="smartphone" class="ic"></i><div class="cap">[스샷: 대진대 AI캠퍼스 화면]</div></div>
+            <div class="ph" style="height:150px;flex-direction:row;gap:16px;"><i data-lucide="qr-code" class="ic"></i><div style="text-align:left;"><div class="cap">[캠프앱 입장 QR]</div><div style="font-size:13px;color:var(--text2);">qr-campapp.png</div></div></div>
+          </div>
+          <div style="flex:1.15;display:flex;flex-direction:column;gap:14px;">
+            <div class="card" style="display:flex;gap:16px;align-items:center;">
+              <i data-lucide="file-text" style="width:30px;height:30px;color:var(--primary);flex-shrink:0;"></i>
+              <div><div style="font-size:21px;font-weight:700;color:var(--text);">① 강의 자료 <span style="font-size:14px;color:var(--text2);font-weight:600;">로그인 X</span></div><div style="font-size:16px;color:var(--text2);">오늘 흐름 · 프롬프트 치트시트 · 도구 링크</div></div>
+            </div>
+            <div class="card" style="display:flex;gap:16px;align-items:center;">
+              <i data-lucide="message-circle" style="width:30px;height:30px;color:var(--primary);flex-shrink:0;"></i>
+              <div><div style="font-size:21px;font-weight:700;color:var(--text);">② 카카오 로그인</div><div style="font-size:16px;color:var(--text2);">1초 가입 + 표시이름 설정(온보딩)</div></div>
+            </div>
+            <div class="card hl" style="display:flex;gap:16px;align-items:center;">
+              <i data-lucide="image" style="width:30px;height:30px;color:var(--primary);flex-shrink:0;"></i>
+              <div><div style="font-size:21px;font-weight:700;color:var(--primary-d);">③ 결과물 게시판</div><div style="font-size:16px;color:var(--primary-d);">내 앱 올리기(URL+스샷+한줄) · 좋아요 · 최신/인기순</div></div>
+            </div>
+            <div class="takeaway" style="margin-top:auto;"><i data-lucide="sparkles" class="ic"></i><span>오늘 여러분이 만들 앱이, <b>바로 이 게시판에 올라갑니다.</b></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P11 · 실제 개발 과정 ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="image" class="ic"></i> CHAPTER 2 — 실제 개발 과정</div>
+        <h2 class="s-title" style="margin:16px 0 6px;">이 앱은, 이렇게 만들었습니다</h2>
+        <p class="s-sub" style="margin-bottom:24px;">기획 → 개발 → 배포 → 데이터까지 — 똑같은 4단계로</p>
+        <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:18px;min-height:0;">
+          <div class="ph" style="position:relative;"><span class="badge" style="position:absolute;top:12px;left:12px;">① 기획</span><i data-lucide="clipboard-list" class="ic"></i><div class="cap">[스샷: 기획 문서 · PRD]</div></div>
+          <div class="ph" style="position:relative;"><span class="badge" style="position:absolute;top:12px;left:12px;">② 개발</span><i data-lucide="mouse-pointer-click" class="ic"></i><div class="cap">[스샷: Cursor 개발 화면]</div></div>
+          <div class="ph" style="position:relative;"><span class="badge" style="position:absolute;top:12px;left:12px;">③ 배포</span><i data-lucide="triangle" class="ic"></i><div class="cap">[스샷: Vercel 배포 화면]</div></div>
+          <div class="ph" style="position:relative;"><span class="badge" style="position:absolute;top:12px;left:12px;">④ 데이터</span><i data-lucide="database" class="ic"></i><div class="cap">[스샷: Supabase 테이블]</div></div>
+        </div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P12 · 가이드라인 (도구 4종) ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="wrench" class="ic"></i> CHAPTER 2 — 가이드라인</div>
+        <h2 class="s-title" style="margin:16px 0 6px;">오늘 쓸 도구 4종, 역할이 다릅니다</h2>
+        <p class="s-sub" style="margin-bottom:30px;">각자 맡은 일이 있어요 — 오후 실습에서 하나씩 직접 세팅합니다</p>
+        <div style="flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:18px;min-height:0;">
+          <div class="card" style="display:flex;flex-direction:column;gap:14px;">
+            <i data-lucide="message-square" style="width:34px;height:34px;color:var(--primary);"></i>
+            <div><div style="font-size:15px;color:var(--text2);font-weight:600;">기획</div><div style="font-size:24px;font-weight:800;color:var(--text);">챗 AI</div></div>
+            <p style="font-size:15px;color:var(--text2);line-height:1.5;margin-top:auto;">아이디어를 또렷한 기획으로<br><span style="color:var(--text2);font-size:13px;">ChatGPT · Claude</span></p>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;gap:14px;">
+            <i data-lucide="mouse-pointer-click" style="width:34px;height:34px;color:var(--primary);"></i>
+            <div><div style="font-size:15px;color:var(--text2);font-weight:600;">개발</div><div style="font-size:24px;font-weight:800;color:var(--text);">Cursor</div></div>
+            <p style="font-size:15px;color:var(--text2);line-height:1.5;margin-top:auto;">말로 시키면 코드로 — AI 코드 에디터</p>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;gap:14px;">
+            <i data-lucide="triangle" style="width:34px;height:34px;color:var(--primary);"></i>
+            <div><div style="font-size:15px;color:var(--text2);font-weight:600;">배포</div><div style="font-size:24px;font-weight:800;color:var(--text);">Vercel</div></div>
+            <p style="font-size:15px;color:var(--text2);line-height:1.5;margin-top:auto;">한 번에 인터넷에 올리기</p>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;gap:14px;">
+            <i data-lucide="database" style="width:34px;height:34px;color:var(--primary);"></i>
+            <div><div style="font-size:15px;color:var(--text2);font-weight:600;">DB · 인증</div><div style="font-size:24px;font-weight:800;color:var(--text);">Supabase</div></div>
+            <p style="font-size:15px;color:var(--text2);line-height:1.5;margin-top:auto;">데이터 저장 + 카카오 로그인</p>
+          </div>
+        </div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P13 · 중식 (구분) ============ -->
+    <section class="slide">
+      <div style="position:absolute;inset:0;background:var(--primary);display:flex;flex-direction:column;
+                  align-items:center;justify-content:center;text-align:center;gap:24px;z-index:1;">
+        <div style="width:96px;height:96px;border-radius:24px;background:rgba(255,255,255,0.14);display:flex;align-items:center;justify-content:center;">
+          <i data-lucide="coffee" style="width:48px;height:48px;color:#fff;"></i>
+        </div>
+        <div style="font-size:22px;font-weight:600;color:rgba(255,255,255,0.85);letter-spacing:2px;">LUNCH BREAK</div>
+        <h2 style="font-size:64px;font-weight:800;color:#fff;letter-spacing:-1px;">점심 식사</h2>
+        <p style="font-size:24px;font-weight:500;color:rgba(255,255,255,0.9);">식사 후엔 직접 만들어 봅니다 — 각자 앱을 만들고 배포까지</p>
+      </div>
+      <div class="snum" style="color:rgba(255,255,255,0.7);"></div>
+    </section>
+
+    <!-- ============ P14 · 캠프앱 입장 (QR 공개) ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="play-circle" class="ic"></i> CHAPTER 3 — 실습 시작</div>
+        <h2 class="s-title" style="margin:16px 0 8px;">이제, 캠프 앱에 다 같이 입장!</h2>
+        <p class="s-sub" style="margin-bottom:26px;">점심 전에 소개했던 그 앱입니다 — 오늘 만든 결과물은 여기에 올립니다</p>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:60px;">
+          <div style="position:relative;width:300px;height:300px;flex-shrink:0;">
+            <div class="ph" style="position:absolute;inset:0;"><i data-lucide="qr-code" class="ic"></i><div class="cap">[캠프앱 입장 QR]</div><div style="font-size:13px;color:var(--text2);">qr-campapp.png</div></div>
+            <img src="assets/deck/qr-campapp.png" alt="캠프앱 입장 QR" onerror="this.remove()" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;border-radius:14px;border:1px solid var(--line);">
+          </div>
+          <div style="max-width:440px;display:flex;flex-direction:column;gap:18px;">
+            <div class="todo"><div class="ti">1</div><div class="tt">QR 스캔 → 입장<span>대진대학교 AI캠퍼스</span></div></div>
+            <div class="todo"><div class="ti">2</div><div class="tt">자료 · 흐름 · 치트시트 둘러보기<span>로그인 없이 바로</span></div></div>
+            <div class="todo"><div class="ti">3</div><div class="tt">결과물 게시판 미리 구경<span>이따 여러분 앱이 올라갈 곳</span></div></div>
+            <div class="takeaway" style="margin-top:6px;"><i data-lucide="sparkles" class="ic"></i><span>오늘이 끝나면, 이 게시판이 <b>여러분 작품으로 꽉 찹니다.</b></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P15 · 실습 안내 ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="route" class="ic"></i> CHAPTER 3 — 실습</div>
+        <h2 class="s-title" style="margin:16px 0 8px;">진행은 이렇게 — 같이, 천천히</h2>
+        <p class="s-sub" style="margin-bottom:30px;">한 번에 하나씩. 강사가 먼저 보여주고, 다 같이 따라합니다</p>
+        <div style="flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:22px;">
+          <div class="card" style="display:flex;flex-direction:column;gap:14px;">
+            <i data-lucide="monitor-play" style="width:34px;height:34px;color:var(--primary);"></i>
+            <div style="font-size:23px;font-weight:800;color:var(--text);">① 시연</div>
+            <p style="font-size:17px;color:var(--text2);line-height:1.5;margin-top:auto;">강사가 화면으로 먼저 보여줍니다</p>
+          </div>
+          <div class="card hl" style="display:flex;flex-direction:column;gap:14px;">
+            <i data-lucide="hand" style="width:34px;height:34px;color:var(--primary);"></i>
+            <div style="font-size:23px;font-weight:800;color:var(--primary-d);">② 따라하기</div>
+            <p style="font-size:17px;color:var(--primary-d);line-height:1.5;margin-top:auto;">각자 똑같이 — 막히면 손 드세요</p>
+          </div>
+          <div class="card" style="display:flex;flex-direction:column;gap:14px;">
+            <i data-lucide="users" style="width:34px;height:34px;color:var(--primary);"></i>
+            <div style="font-size:23px;font-weight:800;color:var(--text);">③ 보조 강사 2명</div>
+            <p style="font-size:17px;color:var(--text2);line-height:1.5;margin-top:auto;">자리로 찾아가 도와드립니다</p>
+          </div>
+        </div>
+        <div class="tip" style="margin-top:26px;"><i data-lucide="lightbulb"></i><span>막혀도 괜찮아요 — <b>안 되는 게 정상</b>입니다. 같이 해결하면 됩니다.</span></div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P16 · 환경 준비 ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="download" class="ic"></i> CHAPTER 3 — 실습 &nbsp;·&nbsp; <span class="stepno">준비</span> 환경 세팅</div>
+        <h2 class="s-title" style="margin:16px 0 8px;">먼저, 작업 도구를 깝니다</h2>
+        <p class="s-sub" style="margin-bottom:24px;">딱 3개만 — 이걸로 오늘 끝까지 갑니다</p>
+        <div class="cols">
+          <div class="col" style="flex:1;"><div class="todo-list">
+            <div class="todo"><div class="ti">1</div><div class="tt">Cursor 설치<span>AI 코드 에디터 — cursor.com에서 다운로드</span></div></div>
+            <div class="todo"><div class="ti">2</div><div class="tt">Node.js 설치<span>앱이 돌아가는 엔진 — LTS 버전으로</span></div></div>
+            <div class="todo"><div class="ti">3</div><div class="tt">프로젝트 폴더 + git 초기화<span>작업물을 저장·관리하는 첫 단추</span></div></div>
+          </div></div>
+          <div class="col" style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:16px;">
+            <div class="codecard"><span class="cm"># 잘 깔렸는지 확인</span><br><span class="pr">$</span> node -v<br><span class="pr">$</span> git --version<br><br><span class="cm"># 작업 폴더에서</span><br><span class="pr">$</span> git init</div>
+          </div>
+        </div>
+        <div class="tip" style="margin-top:22px;"><i data-lucide="info"></i><span>버전 숫자가 뜨면 성공 — 안 뜨면 설치가 덜 된 겁니다.</span></div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P17 · STEP 0 선배포 ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="rocket" class="ic"></i> CHAPTER 3 — 실습 &nbsp;·&nbsp; <span class="stepno">STEP 0</span> 선배포</div>
+        <h2 class="s-title" style="margin:16px 0 8px;">비어 있어도, 일단 배포부터</h2>
+        <p class="s-sub" style="margin-bottom:24px;">"완성하고 올리자"가 아니라 — 빈 앱을 먼저 인터넷에 띄워 둡니다</p>
+        <div class="cols">
+          <div class="col" style="flex:1;"><div class="todo-list">
+            <div class="todo"><div class="ti">1</div><div class="tt">Vercel 가입<span>GitHub 계정으로 1분</span></div></div>
+            <div class="todo"><div class="ti">2</div><div class="tt">빈 프로젝트 연결 → 배포<span>버튼 몇 번이면 주소가 나옵니다</span></div></div>
+            <div class="todo"><div class="ti">3</div><div class="tt">내 앱 주소 확인<span>https://___.vercel.app</span></div></div>
+          </div></div>
+          <div class="col" style="flex:1;"><div class="ph" style="height:100%;"><i data-lucide="triangle" class="ic"></i><div class="cap">[스샷: Vercel 배포 완료 화면]</div></div></div>
+        </div>
+        <div class="tip" style="margin-top:22px;"><i data-lucide="check-circle"></i><span>이미 "배포된 앱"이 있으니, 이제부터는 <b>내용만 채우면</b> 됩니다.</span></div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P18 · STEP 1 기획 ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="file-text" class="ic"></i> CHAPTER 3 — 실습 &nbsp;·&nbsp; <span class="stepno">STEP 1</span> 기획</div>
+        <h2 class="s-title" style="margin:16px 0 8px;">레시피부터 — 챗으로 기획 정리</h2>
+        <p class="s-sub" style="margin-bottom:24px;">오전에 배운 5요소를 챗 AI에 넣어 PRD(기획 문서)로 정리합니다</p>
+        <div class="cols">
+          <div class="col" style="flex:1;"><div class="todo-list">
+            <div class="todo"><div class="ti">1</div><div class="tt">누가·무엇·왜·화면·느낌 정리<span>한 문단으로 또렷하게</span></div></div>
+            <div class="todo"><div class="ti">2</div><div class="tt">챗 AI에게 PRD로 만들어 달라고<span>기능 목록 · 화면 흐름까지</span></div></div>
+            <div class="todo"><div class="ti">3</div><div class="tt">프롬프트 치트시트 복붙<span>캠프앱 자료에 준비됨</span></div></div>
+          </div></div>
+          <div class="col" style="flex:1;"><div class="ph" style="height:100%;"><i data-lucide="clipboard-list" class="ic"></i><div class="cap">[스샷: 챗으로 만든 PRD 예시]</div></div></div>
+        </div>
+        <div class="tip" style="margin-top:22px;"><i data-lucide="lightbulb"></i><span>여기서 또렷할수록 — 뒤 개발이 <b>훨씬 매끄럽습니다.</b></span></div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P19 · STEP 2 디자인 ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="palette" class="ic"></i> CHAPTER 3 — 실습 &nbsp;·&nbsp; <span class="stepno">STEP 2</span> 디자인</div>
+        <h2 class="s-title" style="margin:16px 0 8px;">"이 느낌으로" — 레퍼런스로 지시</h2>
+        <p class="s-sub" style="margin-bottom:24px;">맨바닥에서 고민 말고, 마음에 드는 화면을 보여주고 따라 만들게 합니다</p>
+        <div class="cols">
+          <div class="col" style="flex:1;"><div class="todo-list">
+            <div class="todo"><div class="ti">1</div><div class="tt">레퍼런스 찾기<span>Mobbin 등에서 비슷한 앱 화면</span></div></div>
+            <div class="todo"><div class="ti">2</div><div class="tt">Cursor에 "이 느낌으로"<span>색·폰트·분위기를 말로 전달</span></div></div>
+            <div class="todo"><div class="ti">3</div><div class="tt">기본 화면 틀 잡기<span>홈 · 목록 · 상세</span></div></div>
+          </div></div>
+          <div class="col" style="flex:1;"><div class="ph" style="height:100%;"><i data-lucide="image" class="ic"></i><div class="cap">[스샷: Mobbin 레퍼런스 → 결과 화면]</div></div></div>
+        </div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P20 · STEP 3 개발 ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="wand-2" class="ic"></i> CHAPTER 3 — 실습 &nbsp;·&nbsp; <span class="stepno">STEP 3</span> 개발</div>
+        <h2 class="s-title" style="margin:16px 0 8px;">말로 시키면, 화면이 만들어집니다</h2>
+        <p class="s-sub" style="margin-bottom:24px;">Cursor에게 기능을 하나씩 요청 — 한 번에 하나씩</p>
+        <div class="cols">
+          <div class="col" style="flex:1;"><div class="todo-list">
+            <div class="todo"><div class="ti">1</div><div class="tt">화면 하나씩 요청<span>"홈에 글 목록을 카드로 보여줘"</span></div></div>
+            <div class="todo"><div class="ti">2</div><div class="tt">기능 하나씩 붙이기<span>글쓰기 · 좋아요 · 정렬</span></div></div>
+            <div class="todo"><div class="ti">3</div><div class="tt">바로바로 확인<span>브라우저에서 눌러보며</span></div></div>
+          </div></div>
+          <div class="col" style="flex:1;"><div class="ph" style="height:100%;"><i data-lucide="mouse-pointer-click" class="ic"></i><div class="cap">[스샷: Cursor로 기능 구현 중]</div></div></div>
+        </div>
+        <div class="tip" style="margin-top:22px;"><i data-lucide="alert-triangle"></i><span>한꺼번에 다 시키지 마세요 — <b>하나씩</b> 시켜야 덜 꼬입니다.</span></div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P21 · STEP 4 DB 연결 ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="database" class="ic"></i> CHAPTER 3 — 실습 &nbsp;·&nbsp; <span class="stepno">STEP 4</span> DB · 로그인</div>
+        <h2 class="s-title" style="margin:16px 0 8px;">데이터를 담고, 카카오로 로그인</h2>
+        <p class="s-sub" style="margin-bottom:24px;">Supabase로 글·좋아요를 저장하고, 카카오 로그인을 붙입니다</p>
+        <div class="cols">
+          <div class="col" style="flex:1;"><div class="todo-list">
+            <div class="todo"><div class="ti">1</div><div class="tt">Supabase 프로젝트 생성<span>테이블 만들기(글·좋아요)</span></div></div>
+            <div class="todo"><div class="ti">2</div><div class="tt">앱과 연결<span>키를 .env에 — 코드에 하드코딩 X</span></div></div>
+            <div class="todo"><div class="ti">3</div><div class="tt">카카오 로그인 연결<span>로그인 → 표시이름 설정</span></div></div>
+          </div></div>
+          <div class="col" style="flex:1;"><div class="ph" style="height:100%;"><i data-lucide="table" class="ic"></i><div class="cap">[스샷: Supabase 테이블 + 카카오 로그인]</div></div></div>
+        </div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P22 · QA · 개선 ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="search-check" class="ic"></i> CHAPTER 3 — 실습 &nbsp;·&nbsp; <span class="stepno">QA</span> 점검 · 개선</div>
+        <h2 class="s-title" style="margin:16px 0 8px;">직접 눌러보며, 하나씩 고치기</h2>
+        <p class="s-sub" style="margin-bottom:24px;">완벽 말고 동작 — 막히는 곳을 찾아 한 번에 하나씩 보완합니다</p>
+        <div class="cols">
+          <div class="col" style="flex:1;"><div class="todo-list">
+            <div class="todo"><div class="ti">1</div><div class="tt">핵심 흐름부터 눌러보기<span>로그인 → 글쓰기 → 게시 → 좋아요</span></div></div>
+            <div class="todo"><div class="ti">2</div><div class="tt">안 되는 곳 메모<span>에러 메시지는 그대로 복사</span></div></div>
+            <div class="todo"><div class="ti">3</div><div class="tt">하나씩 Cursor에 고쳐 달라고<span>한꺼번에 X</span></div></div>
+          </div></div>
+          <div class="col" style="flex:1;"><div class="ph" style="height:100%;"><i data-lucide="bug" class="ic"></i><div class="cap">[스샷: 에러 메시지 → 수정]</div></div></div>
+        </div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P23 · STEP 5 재배포 ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="rocket" class="ic"></i> CHAPTER 3 — 실습 &nbsp;·&nbsp; <span class="stepno">STEP 5</span> 배포</div>
+        <h2 class="s-title" style="margin:16px 0 8px;">완성본을 다시 올리기</h2>
+        <p class="s-sub" style="margin-bottom:24px;">STEP 0에서 만든 주소에 — 이번엔 진짜 내용을 담아 재배포</p>
+        <div class="cols">
+          <div class="col" style="flex:1;"><div class="todo-list">
+            <div class="todo"><div class="ti">1</div><div class="tt">변경사항 저장(commit)<span>여기까지의 작업을 기록</span></div></div>
+            <div class="todo"><div class="ti">2</div><div class="tt">Vercel에 재배포<span>자동으로 새 버전이 올라갑니다</span></div></div>
+            <div class="todo"><div class="ti">3</div><div class="tt">실제 주소에서 확인<span>폰으로도 열어보기</span></div></div>
+          </div></div>
+          <div class="col" style="flex:1;"><div class="ph" style="height:100%;"><i data-lucide="globe" class="ic"></i><div class="cap">[스샷: 재배포된 내 앱]</div></div></div>
+        </div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P24 · 도메인 연결 ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="link" class="ic"></i> CHAPTER 3 — 실습 &nbsp;·&nbsp; <span class="stepno">+</span> 도메인</div>
+        <h2 class="s-title" style="margin:16px 0 8px;">내 앱에 진짜 주소 달기</h2>
+        <p class="s-sub" style="margin-bottom:24px;">vercel.app 대신 — 기억하기 쉬운 나만의 도메인</p>
+        <div class="cols">
+          <div class="col" style="flex:1;"><div class="todo-list">
+            <div class="todo"><div class="ti">1</div><div class="tt">도메인 구매<span>가비아 · Cloudflare 등</span></div></div>
+            <div class="todo"><div class="ti">2</div><div class="tt">Vercel에 연결<span>도메인 입력 → 안내대로</span></div></div>
+            <div class="todo"><div class="ti">3</div><div class="tt">전파 대기<span>몇 분~몇 시간 — 기다리면 적용</span></div></div>
+          </div></div>
+          <div class="col" style="flex:1;"><div class="ph" style="height:100%;"><i data-lucide="globe-2" class="ic"></i><div class="cap">[스샷: 도메인 연결 설정]</div></div></div>
+        </div>
+        <div class="tip" style="margin-top:22px;"><i data-lucide="clock"></i><span>바로 안 떠도 정상 — <b>전파 시간</b>이 필요합니다.</span></div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P25 · 결제 (개념만) ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="credit-card" class="ic"></i> CHAPTER 3 — 실습 &nbsp;·&nbsp; <span class="stepno">참고</span> 결제</div>
+        <h2 class="s-title" style="margin:16px 0 8px;">"이런 것도 붙일 수 있다"</h2>
+        <p class="s-sub" style="margin-bottom:30px;">오늘 앱엔 넣지 않지만 — 결제도 모듈을 붙이면 됩니다</p>
+        <div style="flex:1;display:flex;gap:24px;align-items:center;">
+          <div class="card" style="flex:1;display:flex;flex-direction:column;gap:12px;">
+            <i data-lucide="credit-card" style="width:34px;height:34px;color:var(--primary);"></i>
+            <div style="font-size:24px;font-weight:800;color:var(--text);">토스페이먼츠</div>
+            <p style="font-size:16px;color:var(--text2);line-height:1.5;">간편결제 · 카드 — 국내 서비스에 많이 씁니다</p>
+          </div>
+          <div class="card" style="flex:1;display:flex;flex-direction:column;gap:12px;">
+            <i data-lucide="wallet" style="width:34px;height:34px;color:var(--primary);"></i>
+            <div style="font-size:24px;font-weight:800;color:var(--text);">포트원(PortOne)</div>
+            <p style="font-size:16px;color:var(--text2);line-height:1.5;">여러 결제수단을 한 번에 연동</p>
+          </div>
+        </div>
+        <div class="tip" style="margin-top:26px;"><i data-lucide="info"></i><span>오늘은 <b>개념만</b> — 결제는 사업자 등록 등 별도 준비가 필요합니다.</span></div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P26 · 홈 화면 추가 (PWA) ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="smartphone" class="ic"></i> CHAPTER 3 — 실습 &nbsp;·&nbsp; <span class="stepno">+</span> 홈 화면 추가</div>
+        <h2 class="s-title" style="margin:16px 0 8px;">진짜 앱처럼, 홈 화면에 설치</h2>
+        <p class="s-sub" style="margin-bottom:24px;">스토어 없이도 — 브라우저에서 "홈 화면에 추가"하면 앱이 됩니다 (PWA)</p>
+        <div class="cols">
+          <div class="col" style="flex:1;"><div class="todo-list">
+            <div class="todo"><div class="ti">1</div><div class="tt">폰으로 내 앱 열기<span>배포한 주소로</span></div></div>
+            <div class="todo"><div class="ti">2</div><div class="tt">공유 → "홈 화면에 추가"<span>아이콘·이름이 들어갑니다</span></div></div>
+            <div class="todo"><div class="ti">3</div><div class="tt">홈에서 실행<span>주소창 없이 앱처럼</span></div></div>
+          </div></div>
+          <div class="col" style="flex:1;"><div class="ph" style="height:100%;"><i data-lucide="smartphone" class="ic"></i><div class="cap">[스샷: 홈 화면에 추가된 앱 아이콘]</div></div></div>
+        </div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P27 · 결과물 게시판 업로드 ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="upload" class="ic"></i> CHAPTER 3 — 실습 &nbsp;·&nbsp; <span class="stepno">마무리</span> 업로드</div>
+        <h2 class="s-title" style="margin:16px 0 8px;">내 앱을, 캠프 앱에 올리기</h2>
+        <p class="s-sub" style="margin-bottom:24px;">아침에 본 그 게시판으로 돌아옵니다 — 이제 여러분이 채울 차례</p>
+        <div class="cols">
+          <div class="col" style="flex:1;"><div class="todo-list">
+            <div class="todo"><div class="ti">1</div><div class="tt">캠프앱 로그인<span>카카오로</span></div></div>
+            <div class="todo"><div class="ti">2</div><div class="tt">글쓰기 — URL · 스샷 · 한줄설명<span>내 앱 주소를 붙여넣기</span></div></div>
+            <div class="todo"><div class="ti">3</div><div class="tt">게시 → 서로 좋아요<span>친구 작품도 구경</span></div></div>
+          </div></div>
+          <div class="col" style="flex:1;"><div class="ph" style="height:100%;"><i data-lucide="layout-grid" class="ic"></i><div class="cap">[스샷: 게시판 글쓰기 → 게시된 카드]</div></div></div>
+        </div>
+        <div class="tip" style="margin-top:22px;"><i data-lucide="party-popper"></i><span>여기까지 왔으면 — <b>오늘 목표 달성</b>입니다!</span></div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P28 · 트러블슈팅 ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="wrench" class="ic"></i> CHAPTER 3 — 실습 &nbsp;·&nbsp; <span class="stepno">참고</span> 트러블슈팅</div>
+        <h2 class="s-title" style="margin:16px 0 8px;">막히면, 이 순서로</h2>
+        <p class="s-sub" style="margin-bottom:30px;">에러는 당연합니다 — 당황 말고 차례대로</p>
+        <div style="flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:18px;">
+          <div class="card" style="display:flex;flex-direction:column;gap:12px;"><div style="font-size:30px;font-weight:800;color:var(--primary);">1</div><div style="font-size:20px;font-weight:700;color:var(--text);">에러 메시지 읽기</div><p style="font-size:15px;color:var(--text2);line-height:1.5;margin-top:auto;">대부분 답이 거기 있습니다</p></div>
+          <div class="card" style="display:flex;flex-direction:column;gap:12px;"><div style="font-size:30px;font-weight:800;color:var(--primary);">2</div><div style="font-size:20px;font-weight:700;color:var(--text);">그대로 복사 → AI에게</div><p style="font-size:15px;color:var(--text2);line-height:1.5;margin-top:auto;">"이 에러 고쳐줘" + 붙여넣기</p></div>
+          <div class="card" style="display:flex;flex-direction:column;gap:12px;"><div style="font-size:30px;font-weight:800;color:var(--primary);">3</div><div style="font-size:20px;font-weight:700;color:var(--text);">한 단계 되돌리기</div><p style="font-size:15px;color:var(--text2);line-height:1.5;margin-top:auto;">직전에 잘 되던 상태로</p></div>
+          <div class="card hl" style="display:flex;flex-direction:column;gap:12px;"><div style="font-size:30px;font-weight:800;color:var(--primary);">4</div><div style="font-size:20px;font-weight:700;color:var(--primary-d);">오픈톡방에 캡처</div><p style="font-size:15px;color:var(--primary-d);line-height:1.5;margin-top:auto;">화면을 찍어 올리면 같이 봅니다</p></div>
+        </div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P29 · 마무리 ① 메이플 전직 비유 ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="trending-up" class="ic"></i> CHAPTER 3 — 마무리</div>
+        <h2 class="s-title" style="margin:16px 0 6px;">AI를 쓰는 법도, 단계별로 "전직"합니다</h2>
+        <p class="s-sub" style="margin-bottom:30px;">오늘 여러분은 <b style="color:var(--primary);">바이브코딩</b> 단계로 1차 전직했습니다</p>
+        <div class="pipe">
+          <div class="pipe-step"><i data-lucide="message-circle" class="pi"></i><span class="pl" style="font-size:16px;">일상 질문</span></div>
+          <div class="pipe-arrow"><i data-lucide="chevron-right" style="width:20px;height:20px;"></i></div>
+          <div class="pipe-step"><i data-lucide="image" class="pi"></i><span class="pl" style="font-size:16px;">콘텐츠 생성</span></div>
+          <div class="pipe-arrow"><i data-lucide="chevron-right" style="width:20px;height:20px;"></i></div>
+          <div class="pipe-step"><i data-lucide="code-2" class="pi"></i><span class="pl" style="font-size:16px;">코드 어시스턴트</span></div>
+          <div class="pipe-arrow"><i data-lucide="chevron-right" style="width:20px;height:20px;"></i></div>
+          <div class="pipe-step click"><i data-lucide="wand-2" class="pi"></i><span class="pl" style="font-size:16px;">바이브코딩</span><span class="ddalkkak">NOW</span></div>
+          <div class="pipe-arrow"><i data-lucide="chevron-right" style="width:20px;height:20px;"></i></div>
+          <div class="pipe-step"><i data-lucide="workflow" class="pi"></i><span class="pl" style="font-size:16px;">에이전틱 워크플로우</span></div>
+          <div class="pipe-arrow"><i data-lucide="chevron-right" style="width:20px;height:20px;"></i></div>
+          <div class="pipe-step"><i data-lucide="network" class="pi"></i><span class="pl" style="font-size:16px;">오케스트레이션</span></div>
+        </div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;margin-top:10px;">
+          <div class="ph" style="width:60%;height:80%;"><i data-lucide="swords" class="ic"></i><div class="cap">[이미지: 메이플 전직 비유]</div><div style="font-size:13px;color:var(--text2);">p29-maple.png</div></div>
+        </div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+    <!-- ============ P30 · 마무리 ② 클로징 ============ -->
+    <section class="slide">
+      <div class="pad">
+        <div class="chapter"><i data-lucide="flag" class="ic"></i> CHAPTER 3 — 마무리</div>
+        <h2 class="s-title" style="margin:16px 0 8px;">반복이, 다음 단계를 엽니다</h2>
+        <p class="s-sub" style="margin-bottom:28px;">오늘 한 과정을 기억하고 반복하면 — 자동화 워크플로우, 그리고 오케스트레이션까지</p>
+        <div style="display:flex;gap:14px;align-items:center;justify-content:center;margin-bottom:30px;">
+          <span class="badge" style="font-size:18px;padding:12px 22px;">오늘 · 바이브코딩</span>
+          <i data-lucide="arrow-right" style="width:26px;height:26px;color:var(--text2);"></i>
+          <span class="badge" style="font-size:18px;padding:12px 22px;">반복 → 자동화</span>
+          <i data-lucide="arrow-right" style="width:26px;height:26px;color:var(--text2);"></i>
+          <span class="badge" style="font-size:18px;padding:12px 22px;background:var(--primary);color:#fff;border-color:var(--primary);">오케스트레이션</span>
+        </div>
+        <div class="card hl" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:18px;">
+          <i data-lucide="quote" style="width:40px;height:40px;color:var(--primary);"></i>
+          <div style="font-size:36px;font-weight:800;color:var(--primary-d);line-height:1.35;letter-spacing:-.5px;">도구는 바뀌어도,<br>무엇을 만들지 또렷하게 정리하는 능력은 남습니다</div>
+          <div style="font-size:19px;color:var(--text2);margin-top:6px;">게시판에 모인 결과물, 다 같이 구경하며 마칩니다 — 수고하셨습니다 🎉</div>
+        </div>
+      </div>
+      <div class="snum"></div>
+    </section>
+
+  </div>
+</div>
+
+<div class="progress" id="progress"></div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let idx = 0;
+
+  function fitStage(){
+    const stage = document.getElementById('stage');
+    const s = Math.min(window.innerWidth/1280, window.innerHeight/720);
+    stage.style.transform = `scale(${s})`;
+  }
+  function render(){
+    slides.forEach((sl,i)=>sl.classList.toggle('active', i===idx));
+    const cur = String(idx+1).padStart(2,'0'), tot = String(total).padStart(2,'0');
+    const num = slides[idx].querySelector('.snum');
+    if(num) num.textContent = `${cur} / ${tot}`;
+    document.getElementById('progress').style.width = `${((idx+1)/total)*100}%`;
+    if(window.lucide) lucide.createIcons();
+  }
+  function go(n){ idx = Math.max(0, Math.min(total-1, n)); render(); }
+
+  window.addEventListener('keydown', e=>{
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){ e.preventDefault(); go(idx+1); }
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){ e.preventDefault(); go(idx-1); }
+    else if(e.key==='Home'){ go(0); } else if(e.key==='End'){ go(total-1); }
+  });
+  document.getElementById('viewport').addEventListener('click', e=>{
+    if(e.clientX < window.innerWidth*0.25) go(idx-1); else go(idx+1);
+  });
+  window.addEventListener('resize', fitStage);
+
+  fitStage(); render();
+</script>
+</body>
+</html>

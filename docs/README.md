@@ -12,13 +12,14 @@
 | [database-schema.md](database-schema.md) | 테이블·관계·RLS·Storage (DDL 포함) |
 | [architecture.md](architecture.md) | 기술 구조(3층)·인증 흐름·폴더 구조 |
 | [design-system.md](design-system.md) | 색·폰트·컴포넌트 규칙 |
+| [content.md](content.md) | **강의 자료 원문** — 디자인 레퍼런스·기본 폴더 프리셋·개발 용어 |
 | [deployment-checklist.md](deployment-checklist.md) | Supabase·Vercel·도메인 배포 절차 (학번 로그인) |
 | [env.md](env.md) | 환경변수 설명 (샘플: `../.env.example`) |
 | [roadmap.md](roadmap.md) | **구현 로드맵** — 추가 예정 문서 + Phase별 계획 |
 | [lecture-deck-prompt.md](lecture-deck-prompt.md) | **강의안(HTML) 재생성 프롬프트** — 다른 세션에 붙여넣어 덱 생성 |
 | [../CLAUDE.md](../CLAUDE.md) | Cursor/Claude 작업 규칙 |
 
-> 추가 예정 문서(`content.md`·`seed-data.md`·`test-plan.md`·`lecture-mapping.md`)는 [roadmap.md](roadmap.md)에서 시점과 함께 관리.
+> 추가 예정 문서(`seed-data.md`·`test-plan.md`·`lecture-mapping.md`)는 [roadmap.md](roadmap.md)에서 시점과 함께 관리.
 
 ## 제품 요약
 - **이름:** 대진대학교 AI캠퍼스

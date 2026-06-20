@@ -13,6 +13,12 @@
   --ink: #1a1d21;
   --ink-muted: #6b7280;
   --line: #e5e7eb;
+  --component-inactive-color: var(--ink-muted);
+  --component-bg: var(--surface);
+  --component-shadow: var(--line);
+  --component-active-bg: rgba(11, 77, 162, 0.1);
+  --component-line-inactive-color: var(--line);
+  --component-active-color-default: var(--primary);
 }
 
 html,
@@ -22,4 +28,23 @@ body {
   font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
     system-ui, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+@keyframes tabIconBounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  20% {
+    transform: translateY(-0.3em);
+  }
+  40% {
+    transform: translateY(0);
+  }
+  60% {
+    transform: translateY(-0.1em);
+  }
+  80% {
+    transform: translateY(0);
+  }
 }

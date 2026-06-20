@@ -1,0 +1,103 @@
+# DB 스키마 — 대진대학교 AI캠퍼스 (Supabase / PostgreSQL)
+
+## 1. 테이블 개요
+| 테이블 | 역할 |
+|---|---|
+| `profiles` | 사용자 정보(표시 이름, admin 여부). `auth.users`와 1:1 |
+| `posts` | 결과물 게시글(URL·이미지·제목·한줄설명) |
+| `likes` | 좋아요 (사용자 × 글, 1회) |
+| Storage `post-images` | 스크린샷 이미지 파일 |
+
+## 2. 관계
+```
+auth.users ──1:1── profiles ──1:N── posts ──1:N── likes ──N:1── profiles
+```
+
+## 3. DDL
+
+```sql
+-- 확장
+create extension if not exists "pgcrypto";
+
+-- profiles : auth.users 와 1:1
+create table public.profiles (
+  id           uuid primary key references auth.users(id) on delete cascade,
+  display_name text not null,
+  is_admin     boolean not null default false,
+  created_at   timestamptz not null default now()
+);
+
+-- posts : 결과물 게시글
+create table public.posts (
+  id          uuid primary key default gen_random_uuid(),
+  author_id   uuid not null references public.profiles(id) on delete cascade,
+  title       text not null,
+  description text not null,          -- 한줄설명
+  app_url     text not null,          -- 배포된 앱 URL
+  image_url   text,                   -- 스크린샷 (Storage public URL)
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index posts_created_at_idx on public.posts (created_at desc);
+
+-- likes : 좋아요 (복합 PK 로 중복 방지)
+create table public.likes (
+  post_id    uuid not null references public.posts(id) on delete cascade,
+  user_id    uuid not null references public.profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (post_id, user_id)
+);
+
+-- 인기순 정렬용 뷰 (좋아요 수 포함)
+create view public.posts_with_likes as
+select p.*, coalesce(count(l.user_id), 0) as like_count
+from public.posts p
+left join public.likes l on l.post_id = p.id
+group by p.id;
+```
+
+## 4. RLS (Row Level Security) 정책
+> 누구나 읽고, 쓰기/수정/삭제는 본인 또는 admin 으로 제한.
+
+```sql
+alter table public.profiles enable row level security;
+alter table public.posts    enable row level security;
+alter table public.likes    enable row level security;
+
+-- admin 판별 헬퍼
+create or replace function public.is_admin() returns boolean
+language sql security definer stable as $$
+  select coalesce((select is_admin from public.profiles where id = auth.uid()), false);
+$$;
+
+-- profiles : 누구나 조회, 본인만 생성/수정
+create policy "profiles read"   on public.profiles for select using (true);
+create policy "profiles insert" on public.profiles for insert with check (auth.uid() = id);
+create policy "profiles update" on public.profiles for update using (auth.uid() = id);
+
+-- posts : 누구나 조회 / 로그인 본인만 작성 / 본인·admin 수정·삭제
+create policy "posts read"   on public.posts for select using (true);
+create policy "posts insert" on public.posts for insert with check (auth.uid() = author_id);
+create policy "posts update" on public.posts for update using (auth.uid() = author_id or public.is_admin());
+create policy "posts delete" on public.posts for delete using (auth.uid() = author_id or public.is_admin());
+
+-- likes : 누구나 조회(카운트) / 본인만 추가·삭제
+create policy "likes read"   on public.likes for select using (true);
+create policy "likes insert" on public.likes for insert with check (auth.uid() = user_id);
+create policy "likes delete" on public.likes for delete using (auth.uid() = user_id);
+```
+
+## 5. Storage
+- 버킷: **`post-images`** — public read
+- 업로드: 로그인 사용자, 경로 규칙 `post-images/{user_id}/{파일명}`
+- 정책: read = public / insert = authenticated (경로 첫 폴더가 본인 uid)
+
+## 6. 가입(온보딩) 처리
+- 카카오 로그인 성공 → `profiles`에 해당 `id` 행이 없으면 온보딩(S6)에서 `display_name` 입력 후 insert.
+- (선택) `auth.users` 생성 시 트리거로 빈 profiles 자동 생성 후, 표시이름만 update 하는 방식도 가능.
+
+## 7. admin 지정
+- 강사 계정은 최초 로그인 후, 대시보드 SQL로 수동 지정:
+  ```sql
+  update public.profiles set is_admin = true where id = '<강사 user uuid>';
+  ```

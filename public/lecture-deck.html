@@ -61,6 +61,13 @@
 
   .snum{position:absolute;right:34px;bottom:24px;font-size:15px;font-weight:600;color:var(--text2);letter-spacing:.5px;z-index:3;}
   .progress{position:absolute;left:0;bottom:0;height:4px;background:var(--primary);z-index:3;transition:width .25s ease;}
+  .back-btn{position:fixed;right:18px;top:18px;z-index:20;display:inline-flex;align-items:center;gap:8px;height:42px;
+            border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(13,17,23,.72);color:#fff;
+            padding:0 16px;font:700 14px 'Pretendard',-apple-system,sans-serif;backdrop-filter:blur(12px);
+            box-shadow:0 10px 26px rgba(0,0,0,.22);cursor:pointer;transition:background .18s ease,transform .18s ease;}
+  .back-btn:hover{background:rgba(11,77,162,.9);transform:translateY(-1px);}
+  .back-btn:active{transform:translateY(0) scale(.98);}
+  .back-btn i{width:17px;height:17px;stroke-width:2.4;}
 
   /* title */
   .title-pad{justify-content:center;}
@@ -110,6 +117,10 @@
 </style>
 </head>
 <body>
+<button class="back-btn" type="button" id="backBtn" aria-label="이전 화면으로 돌아가기">
+  <i data-lucide="arrow-left"></i>
+  뒤로가기
+</button>
 <div id="viewport">
   <div id="stage">
 
@@ -825,6 +836,13 @@
     if(window.lucide) lucide.createIcons();
   }
   function go(n){ idx = Math.max(0, Math.min(total-1, n)); render(); }
+
+  document.getElementById('backBtn').addEventListener('click', e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    if(window.history.length > 1) window.history.back();
+    else window.location.href = '/';
+  });
 
   window.addEventListener('keydown', e=>{
     if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){ e.preventDefault(); go(idx+1); }

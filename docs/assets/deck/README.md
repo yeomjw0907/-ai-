@@ -11,7 +11,7 @@
 | `p04-ddalkkak.png` | P04 (1-1) 대 딸깍의 시대 | "딸깍" 짤 | 가로형 권장, PNG/JPG |
 | `p05-stackoverflow.png` | P05 (1-2) 스택오버플로우 쇠퇴 | 트래픽 감소 그래프(+출처 보이게) | 가로형, PNG/JPG |
 | `p06-vibecoding.png` | P06 (2) 바이브코딩이란 | leanaileaderboard 캡처 또는 짤 | 가로형, PNG/JPG |
-| `qr-campapp.png` | P10·P14 | **캠프앱**(대진대 AI캠퍼스) 입장 QR | 정사각형, ≥600px, PNG |
+| `app-qr.png` | P10·P14 | **캠프앱**(대진대 AI캠퍼스) 입장 QR | 정사각형, ≥600px, PNG |
 | `p10-app.png` | P10 (5) 데모앱 소개 | 앱 화면 스샷 | 모바일 세로 또는 가로, PNG |
 | `p11-plan.png` | P11 (6) 개발 과정 ① | 기획 문서 스샷 | 가로형, PNG |
 | `p11-cursor.png` | P11 (6) 개발 과정 ② | Cursor 개발 화면 | 가로형, PNG |

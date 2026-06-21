@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { studentNoToEmail } from "@/lib/auth";
+import { STUDENT_NO_PATTERN, normalizeStudentNo, studentNoToEmail } from "@/lib/auth";
 import { getMyBoardPosts, type BoardPost } from "@/lib/posts";
 import { getMyQaComments, getMyQaQuestions, type MyQaComment, type QaQuestion } from "@/lib/qa";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
@@ -247,10 +247,12 @@ export default function LoginPage() {
       <form onSubmit={handleLogin} className="space-y-3 rounded-card border border-line bg-surface p-6 shadow-sm">
         <input
           value={studentNo}
-          onChange={(event) => setStudentNo(event.target.value)}
+          onChange={(event) => setStudentNo(normalizeStudentNo(event.target.value))}
           className="w-full rounded-ctl border border-line px-3 py-3 text-sm outline-none transition focus:border-primary"
           placeholder="학번"
           inputMode="numeric"
+          pattern={STUDENT_NO_PATTERN.source}
+          maxLength={12}
           required
         />
         <PasswordInput

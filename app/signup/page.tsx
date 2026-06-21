@@ -4,35 +4,54 @@ import Link from "next/link";
 import { useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
-import { normalizeStudentNo, studentNoToEmail } from "@/lib/auth";
+import {
+  PASSWORD_MIN_LENGTH,
+  STUDENT_NO_PATTERN,
+  isStrongEnoughPassword,
+  isValidStudentNo,
+  normalizeStudentNo,
+  studentNoToEmail,
+} from "@/lib/auth";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 const DEPARTMENTS = [
-  "스마트융합보안학과",
-  "AI융합학부 스마트모빌리티전공",
-  "IT기계공학과",
-  "반도체융합공학과",
-  "데이터경영산업공학과",
-  "스마트건설환경공학과",
-  "건축공학과",
-  "에너지공학부 화학공학전공",
-  "에너지공학부 전기공학전공",
+  "대순종학과",
+  "영어영문학과",
+  "역사문화콘텐츠학과",
+  "문예콘텐츠창작학과",
+  "시각디자인학과",
+  "산업디자인학과",
+  "영화영상학과",
+  "연기예술학과",
+  "글로벌경제학과",
+  "경영학과",
+  "국제통상학과",
+  "국제지역학과",
+  "중국학과",
+  "공공인재법학과",
+  "행정정보학과",
+  "사회복지학과",
+  "아동학과",
+  "미디어커뮤니케이션학과",
+  "문헌정보학과",
+  "간호학과",
+  "스포츠건강과학과",
   "식품영양학과",
   "의생명과학과",
-  "문헌정보학과",
-  "미디어커뮤니케이션학과",
-  "아동학과",
-  "사회복지학과",
-  "행정정보학과",
-  "공공인재법학과",
-  "국제학부 중국학전공",
-  "국제학부 국제지역학전공",
-  "국제통상학과",
-  "경영학과",
-  "글로벌경제학과",
-  "문예콘텐츠창작학과",
-  "역사·문화콘텐츠학과",
-  "영어영문학과",
+  "스마트시티환경공학과",
+  "AI건설융합공학과",
+  "건축공학과",
+  "컴퓨터공학과",
+  "전기공학과",
+  "반도체융합공학과",
+  "화학공학과",
+  "IT기계공학과",
+  "데이터경영산업공학과",
+  "보건경영학과",
+  "스마트융합보안학과",
+  "AI빅데이터공학과",
+  "스마트모빌리티공학과",
+  "만화게임그래픽학과",
 ];
 
 export default function SignupPage() {
@@ -54,12 +73,30 @@ export default function SignupPage() {
       return;
     }
 
+    const normalizedStudentNo = normalizeStudentNo(studentNo);
+    const trimmedName = name.trim();
+    const trimmedDepartment = department.trim();
+
+    if (!isValidStudentNo(normalizedStudentNo)) {
+      setMessage("학번은 숫자 6~12자리로 입력하세요.");
+      return;
+    }
+
+    if (!trimmedName || !trimmedDepartment) {
+      setMessage("이름과 과를 입력하세요.");
+      return;
+    }
+
+    if (!isStrongEnoughPassword(password)) {
+      setMessage(`비밀번호는 ${PASSWORD_MIN_LENGTH}자 이상, 영문과 숫자를 포함해야 합니다.`);
+      return;
+    }
+
     if (password !== passwordConfirm) {
       setMessage("비밀번호가 서로 다릅니다.");
       return;
     }
 
-    const normalizedStudentNo = normalizeStudentNo(studentNo);
     setIsLoading(true);
 
     const { data, error } = await supabase.auth.signUp({
@@ -68,8 +105,8 @@ export default function SignupPage() {
       options: {
         data: {
           student_no: normalizedStudentNo,
-          name: name.trim(),
-          department: department.trim(),
+          name: trimmedName,
+          department: trimmedDepartment,
         },
       },
     });
@@ -83,8 +120,8 @@ export default function SignupPage() {
     const { error: profileError } = await supabase.from("profiles").insert({
       id: data.user.id,
       student_no: normalizedStudentNo,
-      name: name.trim(),
-      department: department.trim(),
+      name: trimmedName,
+      department: trimmedDepartment,
     });
 
     if (profileError) {
@@ -104,10 +141,12 @@ export default function SignupPage() {
       <form onSubmit={handleSignup} className="space-y-3 rounded-card border border-line bg-surface p-6 shadow-sm">
         <input
           value={studentNo}
-          onChange={(event) => setStudentNo(event.target.value)}
+          onChange={(event) => setStudentNo(normalizeStudentNo(event.target.value))}
           className="w-full rounded-ctl border border-line px-3 py-3 text-sm outline-none transition focus:border-primary"
           placeholder="학번"
           inputMode="numeric"
+          pattern={STUDENT_NO_PATTERN.source}
+          maxLength={12}
           required
         />
         <input
@@ -122,16 +161,19 @@ export default function SignupPage() {
           value={password}
           onChange={setPassword}
           placeholder="비밀번호"
-          minLength={6}
+          minLength={PASSWORD_MIN_LENGTH}
           required
         />
         <PasswordInput
           value={passwordConfirm}
           onChange={setPasswordConfirm}
           placeholder="비밀번호 확인"
-          minLength={6}
+          minLength={PASSWORD_MIN_LENGTH}
           required
         />
+        <p className="text-xs leading-5 text-ink-muted">
+          학번은 숫자 6~12자리, 비밀번호는 {PASSWORD_MIN_LENGTH}자 이상이며 영문과 숫자를 포함해야 합니다.
+        </p>
         <button
           className="w-full rounded-ctl bg-primary py-3 text-sm font-semibold text-white transition hover:bg-primary-strong disabled:opacity-60"
           disabled={isLoading}

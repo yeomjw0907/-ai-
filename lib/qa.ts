@@ -48,10 +48,21 @@ type ReactionRow = { comment_id: string; user_id: string; emoji: CommentReaction
 async function getProfiles(authorIds: string[]) {
   if (!supabase || authorIds.length === 0) return new Map<string, ProfileRow>();
 
-  const { data } = await supabase
-    .from("profiles")
+  const uniqueAuthorIds = Array.from(new Set(authorIds));
+  const { data: publicProfiles, error } = await supabase
+    .from("public_profiles")
     .select("id, name, department")
-    .in("id", Array.from(new Set(authorIds)));
+    .in("id", uniqueAuthorIds);
+  const data =
+    publicProfiles ??
+    (error
+      ? (
+          await supabase
+            .from("profiles")
+            .select("id, name, department")
+            .in("id", uniqueAuthorIds)
+        ).data
+      : null);
 
   return new Map((data as ProfileRow[] | null)?.map((profile) => [profile.id, profile]));
 }

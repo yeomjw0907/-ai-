@@ -45,10 +45,20 @@ async function attachAuthors(posts: PostRow[]): Promise<BoardPost[]> {
   if (!supabase || posts.length === 0) return posts.map(toBoardPost);
 
   const authorIds = Array.from(new Set(posts.map((post) => post.author_id)));
-  const { data: profiles } = await supabase
-    .from("profiles")
+  const { data: publicProfiles, error } = await supabase
+    .from("public_profiles")
     .select("id, name, department")
     .in("id", authorIds);
+  const profiles =
+    publicProfiles ??
+    (error
+      ? (
+          await supabase
+            .from("profiles")
+            .select("id, name, department")
+            .in("id", authorIds)
+        ).data
+      : null);
 
   const profileMap = new Map((profiles as ProfileRow[] | null)?.map((profile) => [profile.id, profile]));
 

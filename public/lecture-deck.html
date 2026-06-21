@@ -774,9 +774,7 @@
             <div class="todo"><div class="ti">2</div><div class="tt">저장소 이름 입력<span>예: my-campus-app</span></div></div>
             <div class="todo"><div class="ti">3</div><div class="tt">Create repository<span>옵션은 기본값으로</span></div></div>
             <div class="todo"><div class="ti">4</div><div class="tt">저장소 주소(URL) 복사<span>다음 단계에서 사용</span></div></div>
-          </div></div>
-          <div class="col" style="flex:1;"><div class="ph" style="height:100%;"><i data-lucide="folder-git-2" class="ic"></i><div class="cap">[스샷: New repository 화면]</div></div></div>
-        </div>
+          </div></div>        </div>
         <div class="tip" style="margin-top:22px;"><i data-lucide="arrow-right"></i><span>이 빈 저장소에 이제 코드를 올립니다 — <b>다음: Git</b>.</span></div>
       </div>
       <div class="snum"></div>
@@ -1113,6 +1111,10 @@
   </div>
 </div>
 
+<button id="back-btn" onclick="history.back()" aria-label="뒤로가기"
+  style="position:fixed;top:18px;left:18px;z-index:10;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.92);border:1px solid #E5E7EB;border-radius:10px;padding:9px 14px;font-family:'Pretendard',sans-serif;font-size:15px;font-weight:600;color:#0B4DA2;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+  <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>뒤로
+</button>
 <div class="progress" id="progress"></div>
 
 <script>
